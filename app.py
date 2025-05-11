@@ -23,13 +23,14 @@ def set_custom_styles():
                 padding: 15px;
                 margin: 10px 0px;
             }
+            .stMetric {border: 1px solid #d3d3d3; border-radius: 5px; padding: 10px;}
         </style>
     """, unsafe_allow_html=True)
 
 def load_bond_data():
     try:
         # Look for the Excel file in the root directory
-        file_path = "BB Inventory_29-04-20251.xlsx"
+        file_path = "BB Inventory_29-04-2025.xlsx"
         
         if not os.path.exists(file_path):
             st.error(f"Excel file not found at: {os.path.abspath(file_path)}")
@@ -66,12 +67,13 @@ def load_bond_data():
         st.error(f"Error loading Excel file: {str(e)}")
         return pd.DataFrame()
 
-def calculate_returns(investment_amount, coupon_rate, frequency, years):
+def calculate_bond_returns(investment_amount, coupon_rate, frequency, years):
     """Calculate bond returns based on investment parameters"""
-    periods = years * frequency
     periodic_rate = coupon_rate / frequency / 100  # Convert percentage to decimal
-    future_value = investment_amount * (1 + periodic_rate) ** periods
-    return future_value
+    coupon_payment = investment_amount * periodic_rate
+    total_coupons = coupon_payment * frequency * years
+    future_value = investment_amount + total_coupons  # Principal + total coupon payments
+    return future_value, total_coupons
 
 def display_bond_metrics(selected_bond):
     """Display key metrics for the selected bond"""
@@ -140,7 +142,6 @@ def main():
         min_value=min_yield,
         max_value=max_yield,
         value=(min_yield, max_yield)
-    )
     
     # Apply filters
     filtered_bonds = bonds_df.copy()
@@ -227,7 +228,10 @@ def main():
     frequency = frequency_map.get(selected_bond.get('Interest Payment Frequency', 'Annual'), 1)
     coupon_rate = selected_bond['Coupon']
     
-    future_value = calculate_returns(investment_amount, coupon_rate, frequency, investment_period)
+    future_value, total_coupons = calculate_bond_returns(
+        investment_amount, coupon_rate, frequency, investment_period)
+    
+    # Currency calculations
     investment_usd = investment_amount / usdinr_rate
     unhedged_usd_value = future_value / exit_usdinr_rate
     
@@ -248,22 +252,26 @@ def main():
         col1, col2 = st.columns(2)
         with col1:
             st.metric("Initial Investment", f"₹{investment_amount:,.2f}")
+            st.metric("Total Coupon Payments", f"₹{total_coupons:,.2f}")
             st.metric("Projected Value", f"₹{future_value:,.2f}")
         with col2:
-            st.metric("Total Return", f"₹{future_value - investment_amount:,.2f}",
-                     delta=f"{((future_value/investment_amount)-1)*100:.2f}%")
-            st.metric("Annualized Return", f"{((future_value/investment_amount)**(1/investment_period)-1)*100:.2f}%")
+            st.metric("Total Return", f"₹{total_coupons:,.2f}",
+                     delta=f"{(total_coupons/investment_amount)*100:.2f}%")
+            st.metric("Annualized Return", f"{(coupon_rate):.2f}%")
     
     with results_tab2:
         st.subheader("USD Returns (Unhedged)")
+        currency_gain_loss = (unhedged_usd_value - investment_usd)
         col1, col2 = st.columns(2)
         with col1:
             st.metric("Initial Investment", f"${investment_usd:,.2f}")
             st.metric("Projected Value", f"${unhedged_usd_value:,.2f}")
         with col2:
-            st.metric("Total Return", f"${unhedged_usd_value - investment_usd:,.2f}",
-                     delta=f"{((unhedged_usd_value/investment_usd)-1)*100:.2f}%")
-            st.metric("Annualized Return", f"{((unhedged_usd_value/investment_usd)**(1/investment_period)-1)*100:.2f}%")
+            st.metric("Total Return", f"${currency_gain_loss:,.2f}",
+                     delta=f"{(currency_gain_loss/investment_usd)*100:.2f}%")
+            st.metric("Currency Impact", 
+                     f"{(usdinr_rate/exit_usdinr_rate-1)*100:.2f}%",
+                     delta_color="inverse")
     
     with results_tab3:
         st.subheader("USDINR Futures Hedge")
@@ -273,13 +281,18 @@ def main():
         To hedge, go long USDINR futures to offset currency risk.
         """)
         
+        hedge_effectiveness = ((net_usd - investment_usd) / investment_usd) * 100
+        effective_rate = investment_amount / net_usd
+        
         col1, col2 = st.columns(2)
         with col1:
             st.metric("Contracts Needed", required_contracts)
             st.metric("Futures P&L", f"₹{futures_pl:,.2f}")
         with col2:
-            st.metric("Hedged USD Value", f"${net_usd:,.2f}")
-            st.metric("Effective USDINR Rate", f"{investment_amount/net_usd:.2f}")
+            st.metric("Hedged USD Value", f"${net_usd:,.2f}",
+                     delta=f"{hedge_effectiveness:.2f}%")
+            st.metric("Effective USDINR Rate", f"{effective_rate:.2f}",
+                     delta=f"{(effective_rate-usdinr_rate):.2f}")
         
         # Hedge effectiveness chart
         rate_changes = np.linspace(usdinr_rate*0.8, usdinr_rate*1.2, 20)
