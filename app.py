@@ -112,10 +112,11 @@ def main():
     
     # Dynamic filters based on available columns
     if 'Secured / Unsecured' in bonds_df.columns:
-        secured_filter = st.sidebar.selectbox(
-            "Security Type", 
-            ['All'] + sorted(bonds_df['Secured / Unsecured'].dropna().unique().tolist())
-    else:
+    secured_filter = st.sidebar.selectbox(
+        "Security Type", 
+        ['All'] + sorted(bonds_df['Secured / Unsecured'].dropna().unique().tolist())
+    )
+else:    
         secured_filter = 'All'
     
     if 'Credit Rating' in bonds_df.columns:
