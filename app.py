@@ -116,8 +116,8 @@ def main():
         "Security Type", 
         ['All'] + sorted(bonds_df['Secured / Unsecured'].dropna().unique().tolist())
     )
-else:    
-        secured_filter = 'All'
+else:
+    secured_filter = 'All'    
     
     if 'Credit Rating' in bonds_df.columns:
         credit_rating_filter = st.sidebar.multiselect(
