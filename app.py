@@ -112,24 +112,26 @@ def main():
     
     # Dynamic filters based on available columns
     if 'Secured / Unsecured' in bonds_df.columns:
-    secured_filter = st.sidebar.selectbox(
-        "Security Type", 
-        ['All'] + sorted(bonds_df['Secured / Unsecured'].dropna().unique().tolist())
-    )
-else:
-    secured_filter = 'All'    
+        secured_filter = st.sidebar.selectbox(
+            "Security Type", 
+            ['All'] + sorted(bonds_df['Secured / Unsecured'].dropna().unique().tolist())
+        )
+    else:
+        secured_filter = 'All'
     
     if 'Credit Rating' in bonds_df.columns:
         credit_rating_filter = st.sidebar.multiselect(
             "Credit Rating", 
-            sorted(bonds_df['Credit Rating'].dropna().unique()))
+            sorted(bonds_df['Credit Rating'].dropna().unique())
+        )
     else:
         credit_rating_filter = []
     
     if 'Interest Payment Frequency' in bonds_df.columns:
         interest_freq_filter = st.sidebar.multiselect(
             "Interest Frequency", 
-            sorted(bonds_df['Interest Payment Frequency'].dropna().unique()))
+            sorted(bonds_df['Interest Payment Frequency'].dropna().unique())
+        )
     else:
         interest_freq_filter = []
     
