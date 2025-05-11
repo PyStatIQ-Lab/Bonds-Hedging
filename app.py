@@ -142,6 +142,7 @@ def main():
         min_value=min_yield,
         max_value=max_yield,
         value=(min_yield, max_yield)
+    )
     
     # Apply filters
     filtered_bonds = bonds_df.copy()
