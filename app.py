@@ -29,7 +29,7 @@ def set_custom_styles():
 def load_bond_data():
     try:
         # Look for the Excel file in the root directory
-        file_path = "BB Inventory_29-04-20251.xlsx"
+        file_path = "BB Inventory_29-04-2025.xlsx"
         
         if not os.path.exists(file_path):
             st.error(f"Excel file not found at: {os.path.abspath(file_path)}")
@@ -59,10 +59,6 @@ def load_bond_data():
         for col in required_columns:
             if col not in df.columns:
                 df[col] = None  # Add missing columns with None values
-        
-        # Adjust Offer Yield values (multiply by 100 to convert from decimal)
-        if 'Offer Yield' in df.columns:
-            df['Offer Yield'] = df['Offer Yield'] * 100
         
         return df
     
