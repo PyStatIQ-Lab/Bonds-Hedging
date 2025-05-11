@@ -60,6 +60,10 @@ def load_bond_data():
             if col not in df.columns:
                 df[col] = None  # Add missing columns with None values
         
+        # Adjust Offer Yield values (multiply by 100 to convert from decimal)
+        if 'Offer Yield' in df.columns:
+            df['Offer Yield'] = df['Offer Yield'] * 100
+        
         return df
     
     except Exception as e:
