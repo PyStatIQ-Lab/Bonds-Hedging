@@ -128,16 +128,28 @@ def main():
     available_columns = [col for col in display_columns if col in bonds_df.columns]
     st.dataframe(bonds_df[available_columns], height=400)
     
-    # Bond selection
-    st.header("Bond Selection")
-    selected_isin = st.selectbox("Select Bond by ISIN", bonds_df['ISIN'].unique())
-    selected_bond = bonds_df[bonds_df['ISIN'] == selected_isin].iloc[0]
+    # Bond selection - only show ISINs that exist in filtered dataframe
+    valid_isins = bonds_df['ISIN'].unique()
+    if len(valid_isins) == 0:
+        st.error("No bonds available with >1 year tenure. Please adjust your filters.")
+        st.stop()
+    
+    selected_isin = st.selectbox("Select Bond by ISIN", valid_isins)
+    
+    # Get selected bond with error handling
+    selected_bond_df = bonds_df[bonds_df['ISIN'] == selected_isin]
+    if len(selected_bond_df) == 0:
+        st.error("Selected bond not found in filtered data.")
+        st.stop()
+    
+    selected_bond = selected_bond_df.iloc[0].to_dict()
     
     # Display bond details
+    st.header("Bond Details")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Issuer", selected_bond['Issuer Name'])
-        st.metric("Coupon Rate", f"{selected_bond['Coupon']:.2f}%")
+        st.metric("Issuer", selected_bond.get('Issuer Name', 'N/A'))
+        st.metric("Coupon Rate", f"{selected_bond.get('Coupon', 0):.2f}%")
         st.metric("Credit Rating", selected_bond.get('Credit Rating', 'N/A'))
     
     with col2:
@@ -148,7 +160,7 @@ def main():
     # Calculate 1-year returns
     st.header("1-Year Return Projection")
     
-    if 'Offer Yield' in selected_bond:
+    if 'Offer Yield' in selected_bond and pd.notna(selected_bond['Offer Yield']):
         yield_rate = selected_bond['Offer Yield']
         future_value = calculate_1year_return(investment_amount, yield_rate)
         return_inr = future_value - investment_amount
@@ -164,6 +176,7 @@ def main():
             st.metric("Return Percentage", f"{return_pct:.2f}%")
     else:
         st.warning("Yield information not available for selected bond")
+        future_value = investment_amount  # Default to no return if yield not available
     
     # USDINR Hedge Calculation
     st.header("USDINR Hedge Calculation")
@@ -216,6 +229,3 @@ def main():
     fig.add_vline(x=usdinr_rate, line_dash="dash", line_color="green", 
                  annotation_text="Current Rate", annotation_position="top right")
     st.plotly_chart(fig, use_container_width=True)
-
-if __name__ == "__main__":
-    main()
