@@ -117,6 +117,10 @@ def main():
     if 'Residual Tenure (Years)' in bonds_df.columns:
         bonds_df = bonds_df[bonds_df['Residual Tenure (Years)'] >= 1]
     
+    if bonds_df.empty:
+        st.error("No bonds available with >1 year tenure. Please check your data.")
+        st.stop()
+    
     # Display bond table with key metrics
     st.header("Available Bonds (1+ Year Tenure)")
     
@@ -130,10 +134,6 @@ def main():
     
     # Bond selection - only show ISINs that exist in filtered dataframe
     valid_isins = bonds_df['ISIN'].unique()
-    if len(valid_isins) == 0:
-        st.error("No bonds available with >1 year tenure. Please adjust your filters.")
-        st.stop()
-    
     selected_isin = st.selectbox("Select Bond by ISIN", valid_isins)
     
     # Get selected bond with error handling
@@ -229,3 +229,6 @@ def main():
     fig.add_vline(x=usdinr_rate, line_dash="dash", line_color="green", 
                  annotation_text="Current Rate", annotation_position="top right")
     st.plotly_chart(fig, use_container_width=True)
+
+if __name__ == "__main__":
+    main()
